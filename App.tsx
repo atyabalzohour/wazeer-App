@@ -6,6 +6,7 @@ import { Colors } from './src/theme/colors';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { CategoriesScreen } from './src/screens/CategoriesScreen';
 import { CartScreen } from './src/screens/CartScreen';
+import { OrdersScreen } from './src/screens/OrdersScreen';
 import { AccountScreen } from './src/screens/AccountScreen';
 import { BottomTabBar } from './src/components/BottomTabBar';
 import { LocationModal } from './src/components/LocationModal';
@@ -35,6 +36,7 @@ const MainNavigator: React.FC = () => {
       case 'cart':
         return <CartScreen />;
       case 'orders':
+        return <OrdersScreen />;
       case 'account':
         return <AccountScreen />;
       default:

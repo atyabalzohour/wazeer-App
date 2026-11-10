@@ -41,6 +41,7 @@ interface AppContextType {
   selectedAddress: Address;
   setSelectedAddress: (addr: Address) => void;
   addresses: Address[];
+  addAddress: (addr: Address) => void;
   loyaltyPoints: number;
   redeemPoints: () => void;
   selectedInvoice: InvoiceData | null;
@@ -95,6 +96,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [addresses, setAddresses] = useState<Address[]>(SAVED_ADDRESSES);
   const [selectedAddress, setSelectedAddress] = useState<Address>(SAVED_ADDRESSES[0]);
+
+  const addAddress = (newAddr: Address) => {
+    setAddresses((prev) => [newAddr, ...prev]);
+    setSelectedAddress(newAddr);
+  };
 
   // Initial Cart matching wazeer-app5.png (3 items, 4 pieces total)
   const [cartItems, setCartItems] = useState<CartItem[]>([
@@ -357,6 +363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedAddress,
         setSelectedAddress,
         addresses,
+        addAddress,
         loyaltyPoints,
         redeemPoints,
         selectedInvoice,

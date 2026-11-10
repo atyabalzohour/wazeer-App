@@ -6,11 +6,13 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {
   User,
   Pencil,
   ChevronLeft,
+  ChevronRight,
   Star,
   ShoppingBag,
   Clock,
@@ -25,6 +27,11 @@ import {
   MapPin,
   Settings,
   CreditCard,
+  Wallet,
+  ShieldCheck,
+  LogOut,
+  HelpCircle,
+  Plus,
 } from 'lucide-react-native';
 import { Header } from '../components/Header';
 import { Colors, BorderRadius, Spacing } from '../theme/colors';
@@ -47,42 +54,41 @@ export const AccountScreen: React.FC = () => {
     setLocationModalVisible,
     setNotificationsOpen,
     userProfile,
+    setCurrentTab,
+    favorites,
+    addresses,
   } = useApp();
 
-  const [activeOrderTab, setActiveOrderTab] = useState<'current' | 'history'>('current');
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(150);
 
-  const handleOrderClick = (order: Order) => {
-    const inv: InvoiceData = {
-      invoiceNumber: `INV-${order.orderNumber.replace('#', '')}`,
-      orderNumber: order.orderNumber,
-      dateStr: order.dateStr,
-      customerName: 'أحمد محمود',
-      deliveryAddress: `${order.address.title} - ${order.address.street}، ${order.address.details}`,
-      paymentMethodText:
-        order.paymentMethod === 'cash'
-          ? 'الدفع عند الاستلام'
-          : order.paymentMethod === 'card'
-          ? 'بطاقة بنكية'
-          : 'المحفظة الإلكترونية',
-      paymentStatus: order.statusStep === 4 ? 'paid' : 'pending',
-      items: order.items,
-      subtotal: order.subtotal,
-      deliveryFee: order.deliveryFee,
-      vatRate: 0.14,
-      vatAmount: order.vat,
-      discount: order.discount,
-      totalAmount: order.total,
-    };
-    viewInvoice(inv);
+  const handleRechargeWallet = () => {
+    Alert.alert(
+      'شحن المحفظة 💳',
+      'اختر المبلغ المطلوب شحنه في محفظتك الإلكترونية:',
+      [
+        { text: '+50 EGP', onPress: () => { setWalletBalance(b => b + 50); Alert.alert('تم الشحن', 'تمت إضافة 50 EGP إلى محفظتك بنجاح!'); } },
+        { text: '+100 EGP', onPress: () => { setWalletBalance(b => b + 100); Alert.alert('تم الشحن', 'تمت إضافة 100 EGP إلى محفظتك بنجاح!'); } },
+        { text: 'إلغاء', style: 'cancel' },
+      ]
+    );
   };
 
-  const currentOrders = orders.filter((o) => o.statusStep < 4);
-  const historyOrders = orders.filter((o) => o.statusStep === 4);
-  const displayedOrders = activeOrderTab === 'current' ? currentOrders : historyOrders;
+  const handleLogout = () => {
+    Alert.alert(
+      'تسجيل الخروج',
+      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'تسجيل خروج', style: 'destructive', onPress: () => Alert.alert('تم تسجيل الخروج', 'إلى اللقاء قريباً في وزير الحلو!') },
+      ]
+    );
+  };
+
+  const lastOrder = orders[0];
 
   return (
     <View style={styles.container}>
@@ -106,6 +112,9 @@ export const AccountScreen: React.FC = () => {
           <View style={styles.profileInfoWrap}>
             <Text style={styles.welcomeName}>أهلاً بك يا {userProfile.name} 👋</Text>
             <Text style={styles.phoneNumber}>{userProfile.phone}</Text>
+            <View style={styles.vipTag}>
+              <Text style={styles.vipTagText}>عميل برونزي مميز ⭐</Text>
+            </View>
           </View>
 
           {/* Right: Avatar with edit pencil */}
@@ -148,228 +157,105 @@ export const AccountScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Orders Section Header */}
-        <View style={styles.ordersHeaderRow}>
-          <View style={{ flex: 1 }} />
-          <View style={styles.headerTitleBox}>
-            <ShoppingBag size={20} color={Colors.vibrantPink} strokeWidth={2.2} />
-            <Text style={styles.ordersMainTitle}>طلباتي</Text>
-          </View>
-        </View>
-
-        {/* Orders Tabs: Left is Previous Orders, Right is Current Orders */}
-        <View style={styles.tabsContainer}>
+        {/* Wallet & Stats Strip */}
+        <View style={styles.statsRow}>
+          {/* Wallet Card */}
           <TouchableOpacity
-            style={[
-              styles.tabPill,
-              activeOrderTab === 'history' && styles.tabPillActive,
-            ]}
-            onPress={() => setActiveOrderTab('history')}
+            style={styles.walletCard}
+            onPress={handleRechargeWallet}
             activeOpacity={0.85}
           >
-            <Clock
-              size={15}
-              color={activeOrderTab === 'history' ? Colors.white : Colors.subText}
-              strokeWidth={2.2}
-            />
-            <Text
-              style={[
-                styles.tabPillText,
-                activeOrderTab === 'history' && styles.tabPillTextActive,
-              ]}
-            >
-              الطلبات السابقة
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.tabPill,
-              activeOrderTab === 'current' && styles.tabPillActive,
-            ]}
-            onPress={() => setActiveOrderTab('current')}
-            activeOpacity={0.85}
-          >
-            <Text
-              style={[
-                styles.tabPillText,
-                activeOrderTab === 'current' && styles.tabPillTextActive,
-              ]}
-            >
-              الطلبات الحالية ({currentOrders.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Order Cards List */}
-        <View style={styles.ordersList}>
-          {displayedOrders.length === 0 ? (
-            <View style={styles.noOrdersCard}>
-              <Text style={styles.noOrdersText}>لا توجد طلبات في هذا القسم</Text>
+            <View style={styles.walletPlus}>
+              <Plus size={14} color={Colors.white} />
             </View>
-          ) : (
-            displayedOrders.map((order) => (
-              <TouchableOpacity
-                key={order.id}
-                style={styles.orderCard}
-                onPress={() => handleOrderClick(order)}
-                activeOpacity={0.9}
-              >
-                {/* Order Card Top Row */}
-                <View style={styles.orderCardHeader}>
-                  {/* Left: Price */}
-                  <View style={styles.orderPriceBox}>
-                    <ChevronLeft size={16} color={Colors.muted} strokeWidth={2.4} />
-                    <Text style={styles.orderPriceText}>{order.total} EGP</Text>
-                  </View>
+            <View style={styles.walletTextWrap}>
+              <Text style={styles.walletAmount}>{walletBalance} EGP</Text>
+              <Text style={styles.walletLabel}>رصيد المحفظة</Text>
+            </View>
+            <View style={styles.walletIconCircle}>
+              <Wallet size={18} color={Colors.vibrantPink} />
+            </View>
+          </TouchableOpacity>
 
-                  {/* Center: Order Info */}
-                  <View style={styles.orderMetaBox}>
-                    <Text style={styles.orderNumberText}>
-                      طلب رقم {order.orderNumber}
-                    </Text>
-                    <View style={styles.orderDateRow}>
-                      <Text style={styles.orderDateText}>{order.dateStr}</Text>
-                      <Calendar size={13} color={Colors.muted} strokeWidth={2.2} />
-                    </View>
-                  </View>
+          {/* Favorites Count */}
+          <TouchableOpacity
+            style={styles.statMiniCard}
+            onPress={() => setFavoritesOpen(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.statMiniVal}>{favorites.length}</Text>
+            <Text style={styles.statMiniLabel}>المفضلة</Text>
+            <Heart size={16} color={Colors.vibrantPink} fill={Colors.vibrantPink} />
+          </TouchableOpacity>
 
-                  {/* Right: Dessert image */}
-                  <Image
-                    source={order.items[0]?.image || require('../../assets/cat-cake.jpg')}
-                    style={styles.orderThumb}
-                  />
-                </View>
-
-                {/* Progress Stepper Timeline matching wazeer-app.png */}
-                <View style={styles.timelineRow}>
-                  {/* Step 4: Left is تم التوصيل */}
-                  <View style={styles.timelineStep}>
-                    <View
-                      style={[
-                        styles.timelineCircle,
-                        order.statusStep >= 4 && styles.timelineCircleDone,
-                      ]}
-                    >
-                      <Check
-                        size={12}
-                        color={order.statusStep >= 4 ? Colors.white : Colors.muted}
-                        strokeWidth={2.5}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.timelineLabel,
-                        order.statusStep === 4 && styles.timelineLabelActive,
-                      ]}
-                    >
-                      تم التوصيل
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.timelineBar,
-                      order.statusStep >= 4 && styles.timelineBarActive,
-                    ]}
-                  />
-
-                  {/* Step 3: جاري التوصيل */}
-                  <View style={styles.timelineStep}>
-                    <View
-                      style={[
-                        styles.timelineCircle,
-                        order.statusStep >= 3 && styles.timelineCircleActive,
-                      ]}
-                    >
-                      <Bike
-                        size={14}
-                        color={order.statusStep >= 3 ? Colors.white : Colors.muted}
-                        strokeWidth={2.2}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.timelineLabel,
-                        order.statusStep === 3 && styles.timelineLabelActive,
-                      ]}
-                    >
-                      جاري التوصيل
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.timelineBar,
-                      order.statusStep >= 3 && styles.timelineBarActive,
-                    ]}
-                  />
-
-                  {/* Step 2: قيد التحضير */}
-                  <View style={styles.timelineStep}>
-                    <View
-                      style={[
-                        styles.timelineCircle,
-                        order.statusStep >= 2 && styles.timelineCircleActive,
-                      ]}
-                    >
-                      <UtensilsCrossed
-                        size={12}
-                        color={order.statusStep >= 2 ? Colors.white : Colors.muted}
-                        strokeWidth={2.2}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.timelineLabel,
-                        order.statusStep === 2 && styles.timelineLabelActive,
-                      ]}
-                    >
-                      قيد التحضير
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.timelineBar,
-                      order.statusStep >= 2 && styles.timelineBarActive,
-                    ]}
-                  />
-
-                  {/* Step 1: Right is استلام الطلب */}
-                  <View style={styles.timelineStep}>
-                    <View
-                      style={[
-                        styles.timelineCircle,
-                        order.statusStep >= 1 && styles.timelineCircleDone,
-                      ]}
-                    >
-                      <Check
-                        size={12}
-                        color={order.statusStep >= 1 ? Colors.white : Colors.muted}
-                        strokeWidth={2.5}
-                      />
-                    </View>
-                    <Text style={styles.timelineLabel}>استلام الطلب</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
+          {/* Orders Count */}
+          <TouchableOpacity
+            style={styles.statMiniCard}
+            onPress={() => setCurrentTab('orders')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.statMiniVal}>{orders.length}</Text>
+            <Text style={styles.statMiniLabel}>إجمالي الطلبات</Text>
+            <ShoppingBag size={16} color={Colors.deepPurple} />
+          </TouchableOpacity>
         </View>
+
+        {/* Last Order Quick View */}
+        {lastOrder && (
+          <View style={styles.lastOrderCard}>
+            <View style={styles.lastOrderHeader}>
+              <TouchableOpacity
+                onPress={() => setCurrentTab('orders')}
+                style={styles.viewAllOrdersLink}
+              >
+                <ChevronLeft size={14} color={Colors.vibrantPink} />
+                <Text style={styles.viewAllOrdersText}>عرض كل الطلبات</Text>
+              </TouchableOpacity>
+              <Text style={styles.lastOrderTitle}>آخر طلب لديك</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.lastOrderBody}
+              onPress={() => setCurrentTab('orders')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.lastOrderPriceCol}>
+                <Text style={styles.lastOrderPrice}>{lastOrder.total} EGP</Text>
+                <View style={styles.statusPill}>
+                  <Text style={styles.statusPillText}>
+                    {lastOrder.statusStep === 4 ? 'تم التوصيل ✓' : 'جاري التوصيل 🛵'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.lastOrderInfo}>
+                <Text style={styles.lastOrderNum}>طلب {lastOrder.orderNumber}</Text>
+                <Text style={styles.lastOrderItems}>
+                  {lastOrder.items.map(i => i.productName).join(' • ')}
+                </Text>
+                <Text style={styles.lastOrderDate}>{lastOrder.dateStr}</Text>
+              </View>
+
+              <Image
+                source={lastOrder.items[0]?.image || require('../../assets/cat-cake.jpg')}
+                style={styles.lastOrderThumb}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* My Account Section Header */}
         <View style={styles.accountHeaderRow}>
           <View style={{ flex: 1 }} />
           <View style={styles.headerTitleBox}>
             <UserCircle2 size={20} color={Colors.vibrantPink} strokeWidth={2.2} />
-            <Text style={styles.accountMainTitle}>حسابي</Text>
+            <Text style={styles.accountMainTitle}>إدارة الحساب</Text>
           </View>
         </View>
 
         {/* Quick Actions Grid matching wazeer-app.png */}
         <View style={styles.actionsGrid}>
-          {/* Row 1: Right to Left: عناويني (pink highlight) | المفضلة | الدعم والمساعدة | التنبيهات */}
+          {/* Row 1: Right to Left: عناويني | المفضلة | الدعم والمساعدة | التنبيهات */}
           <View style={styles.actionsGridRow}>
             <TouchableOpacity
               style={styles.actionGridCard}
@@ -405,7 +291,7 @@ export const AccountScreen: React.FC = () => {
             >
               <MapPin size={22} color={Colors.vibrantPink} strokeWidth={2.2} />
               <Text style={[styles.actionGridLabel, { color: Colors.vibrantPink }]}>
-                عناويني
+                عناويني ({addresses.length})
               </Text>
             </TouchableOpacity>
           </View>
@@ -418,7 +304,7 @@ export const AccountScreen: React.FC = () => {
               activeOpacity={0.85}
             >
               <Settings size={18} color={Colors.deepPurple} strokeWidth={2.2} />
-              <Text style={styles.actionWideLabel}>الإعدادات</Text>
+              <Text style={styles.actionWideLabel}>الإعدادات العامة</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -427,10 +313,20 @@ export const AccountScreen: React.FC = () => {
               activeOpacity={0.85}
             >
               <CreditCard size={18} color={Colors.deepPurple} strokeWidth={2.2} />
-              <Text style={styles.actionWideLabel}>معلومات الحساب</Text>
+              <Text style={styles.actionWideLabel}>البيانات الشخصية</Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+          activeOpacity={0.85}
+        >
+          <LogOut size={16} color="#E0245E" />
+          <Text style={styles.logoutBtnText}>تسجيل الخروج</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Account Feature Modals */}
@@ -457,41 +353,82 @@ export const AccountScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: Colors.softGray,
   },
   scrollContent: {
-    paddingBottom: 34,
+    paddingBottom: 28,
   },
   profileCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.lg,
-    marginTop: 14,
-    borderRadius: 20,
-    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: Colors.white,
+    marginHorizontal: Spacing.lg,
+    marginTop: 14,
+    borderRadius: BorderRadius.xl,
+    padding: 14,
     shadowColor: Colors.shadowColor,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 5,
-    elevation: 2,
+    elevation: 3,
+  },
+  dessertThumbWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: Colors.goldenYellow,
+  },
+  dessertThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  profileInfoWrap: {
+    flex: 1,
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+  },
+  welcomeName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.deepPurple,
+    marginBottom: 2,
+  },
+  phoneNumber: {
+    fontSize: 12,
+    color: Colors.subText,
+    marginBottom: 4,
+  },
+  vipTag: {
+    backgroundColor: '#FFF9E6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFEBA3',
+  },
+  vipTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B38A00',
   },
   avatarWrap: {
     position: 'relative',
   },
   avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#EDEBF7',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F2F8',
     justifyContent: 'center',
     alignItems: 'center',
   },
   pencilCircle: {
     position: 'absolute',
     bottom: -2,
-    right: -2,
+    left: -2,
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -501,79 +438,23 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.white,
   },
-  profileInfoWrap: {
-    flex: 1,
-    alignItems: 'flex-end',
-    paddingRight: 12,
-  },
-  welcomeName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.deepPurple,
-    marginBottom: 2,
-  },
-  phoneNumber: {
-    fontSize: 12,
-    color: Colors.subText,
-    fontWeight: '600',
-  },
-  dessertThumbWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  dessertThumb: {
-    width: '100%',
-    height: '100%',
-  },
   pointsBanner: {
-    backgroundColor: Colors.goldenYellowLight,
+    backgroundColor: Colors.goldenYellow,
     marginHorizontal: Spacing.lg,
     marginTop: 12,
-    borderRadius: 18,
+    borderRadius: BorderRadius.xl,
     padding: 14,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#FBE694',
-  },
-  pointsTextWrap: {
-    alignItems: 'flex-end',
-    flex: 1,
-  },
-  pointsScoreRow: {
-    flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 6,
-  },
-  starBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.deepPurple,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pointsNumber: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: Colors.vibrantPink,
-  },
-  pointsWord: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.deepPurple,
-  },
-  pointsSub: {
-    fontSize: 10,
-    color: Colors.subText,
-    marginTop: 2,
-    textAlign: 'right',
+    shadowColor: Colors.goldenYellow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   redeemBtn: {
-    backgroundColor: Colors.vibrantPink,
+    backgroundColor: Colors.deepPurple,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -583,175 +464,210 @@ const styles = StyleSheet.create({
   },
   redeemBtnText: {
     color: Colors.white,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  ordersHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  headerTitleBox: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 6,
-  },
-  ordersMainTitle: {
-    fontSize: 17,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: Colors.deepPurple,
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    gap: 10,
-    marginBottom: 12,
-  },
-  tabPill: {
-    flex: 1,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-    paddingVertical: 9,
-    borderRadius: BorderRadius.full,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tabPillActive: {
-    backgroundColor: Colors.vibrantPink,
-    borderColor: Colors.vibrantPink,
-  },
-  tabPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.subText,
-  },
-  tabPillTextActive: {
-    color: Colors.white,
-  },
-  ordersList: {
-    paddingHorizontal: Spacing.lg,
-    gap: 12,
-  },
-  noOrdersCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  noOrdersText: {
-    fontSize: 13,
-    color: Colors.subText,
-  },
-  orderCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  orderCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  orderThumb: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    marginLeft: 10,
-  },
-  orderMetaBox: {
-    flex: 1,
+  pointsTextWrap: {
     alignItems: 'flex-end',
   },
-  orderNumberText: {
-    fontSize: 13.5,
+  pointsScoreRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pointsNumber: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.deepPurple,
+  },
+  pointsWord: {
+    fontSize: 13,
     fontWeight: '800',
     color: Colors.deepPurple,
-    marginBottom: 3,
   },
-  orderDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  orderDateText: {
-    fontSize: 11,
-    color: Colors.subText,
-  },
-  orderPriceBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  orderPriceText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.vibrantPink,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: Colors.softGray,
-  },
-  timelineStep: {
-    alignItems: 'center',
-    minWidth: 50,
-  },
-  timelineCircle: {
+  starBadge: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: Colors.softGray,
+    backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pointsSub: {
+    fontSize: 10.5,
+    color: '#6E5800',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.lg,
+    marginTop: 12,
+    gap: 10,
+  },
+  walletCard: {
+    flex: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#ECECF2',
+    elevation: 2,
+  },
+  walletPlus: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.vibrantPink,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  walletTextWrap: {
+    alignItems: 'flex-end',
+    flex: 1,
+    marginRight: 8,
+  },
+  walletAmount: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: Colors.deepPurple,
+  },
+  walletLabel: {
+    fontSize: 10.5,
+    color: Colors.subText,
+  },
+  walletIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FDEDF2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statMiniCard: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ECECF2',
+    elevation: 2,
+  },
+  statMiniVal: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: Colors.deepPurple,
+    marginBottom: 2,
+  },
+  statMiniLabel: {
+    fontSize: 10,
+    color: Colors.subText,
     marginBottom: 4,
   },
-  timelineCircleDone: {
-    backgroundColor: '#D1D5DB',
+  lastOrderCard: {
+    backgroundColor: Colors.white,
+    marginHorizontal: Spacing.lg,
+    marginTop: 14,
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#ECECF2',
+    elevation: 2,
   },
-  timelineCircleActive: {
-    backgroundColor: Colors.vibrantPink,
+  lastOrderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5FA',
+    paddingBottom: 8,
   },
-  timelineLabel: {
-    fontSize: 9,
-    color: Colors.subText,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  timelineLabelActive: {
-    color: Colors.vibrantPink,
+  lastOrderTitle: {
+    fontSize: 13,
     fontWeight: '800',
+    color: Colors.deepPurple,
   },
-  timelineBar: {
+  viewAllOrdersLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  viewAllOrdersText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: Colors.vibrantPink,
+  },
+  lastOrderBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  lastOrderPriceCol: {
+    alignItems: 'flex-start',
+  },
+  lastOrderPrice: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: Colors.vibrantPink,
+    marginBottom: 4,
+  },
+  statusPill: {
+    backgroundColor: '#E6F8FA',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0A7F8D',
+  },
+  lastOrderInfo: {
     flex: 1,
-    height: 2,
-    backgroundColor: Colors.border,
-    marginBottom: 16,
+    alignItems: 'flex-end',
+    paddingHorizontal: 10,
   },
-  timelineBarActive: {
-    backgroundColor: Colors.vibrantPink,
+  lastOrderNum: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: Colors.deepPurple,
+    marginBottom: 2,
+  },
+  lastOrderItems: {
+    fontSize: 11,
+    color: Colors.subText,
+    textAlign: 'right',
+  },
+  lastOrderDate: {
+    fontSize: 10,
+    color: Colors.muted,
+    marginTop: 2,
+  },
+  lastOrderThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
   },
   accountHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    marginTop: 20,
+    marginTop: 18,
     marginBottom: 8,
   },
+  headerTitleBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   accountMainTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: Colors.deepPurple,
   },
@@ -761,32 +677,32 @@ const styles = StyleSheet.create({
   },
   actionsGridRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   actionGridCard: {
     flex: 1,
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 3,
-    elevation: 1,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ECECF2',
   },
   actionCardHighlighted: {
-    backgroundColor: Colors.vibrantPinkLight,
-    borderWidth: 1,
-    borderColor: '#FCCCD9',
+    borderWidth: 1.5,
+    borderColor: Colors.vibrantPink,
   },
   actionGridLabel: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '700',
     color: Colors.deepPurple,
     marginTop: 6,
-    textAlign: 'center',
   },
   actionsWideRow: {
     flexDirection: 'row',
@@ -794,22 +710,42 @@ const styles = StyleSheet.create({
   },
   actionWideBtn: {
     flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    paddingVertical: 12,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
+    flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 12,
     gap: 8,
     shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 3,
-    elevation: 1,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ECECF2',
   },
   actionWideLabel: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '700',
     color: Colors.deepPurple,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F3',
+    marginHorizontal: Spacing.lg,
+    marginTop: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#FFDCE2',
+  },
+  logoutBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E0245E',
   },
 });
