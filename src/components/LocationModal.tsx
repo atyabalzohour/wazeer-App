@@ -9,6 +9,8 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {
   X,
@@ -73,10 +75,14 @@ export const LocationModal: React.FC = () => {
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.modalContent}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableWithoutFeedback onPress={handleClose}>
+          <View style={styles.overlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
               {/* Header */}
               <View style={styles.headerRow}>
                 <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
@@ -249,6 +255,7 @@ export const LocationModal: React.FC = () => {
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -268,7 +275,7 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   headerRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
