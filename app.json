@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "وزير الحلو",
+    "slug": "wazeer-elhelw-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/wazeer-emblem.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/wazeer-emblem.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#12AFBF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wazeerelhelw.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/wazeer-emblem.png",
+        "backgroundColor": "#12AFBF"
+      },
+      "package": "com.wazeerelhelw.app"
+    },
+    "web": {
+      "favicon": "./assets/wazeer-emblem.png"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
